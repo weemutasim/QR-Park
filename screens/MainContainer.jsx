@@ -13,18 +13,21 @@ import SplashEasy from './SplashEasy';
 import SplashFast from './SplashFast';
 import Login from './Login';
 import Regis from './Regis';
+import DetailsHistory from './operation_screens/DetailsHistory'
 
 //Operation_Screen
 import HomeScreen from './operation_screens/HomeScreen';
 import DetailsScreen from './operation_screens/DetailsScreen';
 import QRScreen from './operation_screens/QRScreen';
-import ProfileScreen from './operation_screens/ProfileScreen';
+// import ProfileScreen from './operation_screens/ProfileScreen';
+import History from './operation_screens/History'
 import SettingsScreen from './operation_screens/SettingsScreen';
 
 const homeName = "Home";
 const detailsName = "Details";
-const profileName = "Profile";
+// const profileName = "Profile";
 const qrName = "Scan"
+const history = "history";
 const settingsName = "Settings";
 
 const Operation_Screen = () => {
@@ -47,10 +50,16 @@ const Operation_Screen = () => {
 
           } else if (rn === qrName) {
             iconName = focused ? 'scan-outline' : 'scan-sharp';
-          } else if (rn === profileName) {
-            iconName = focused ? 'people' : 'people-outline'
+
           } 
-          else if (rn === settingsName) {
+          // else if (rn === profileName) {
+          //   iconName = focused ? 'people' : 'people-outline'
+
+          // } 
+          else if (rn === history) {
+            iconName = focused ? 'reorder-two' : 'reorder-two-outline';
+            
+          }else if (rn === settingsName) {
             iconName = focused ? 'settings' : 'settings-outline';
           }
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -59,7 +68,8 @@ const Operation_Screen = () => {
       <Tab.Screen name={homeName} component={HomeScreen} options={{headerShown: false}} />
       <Tab.Screen name={detailsName} component={DetailsScreen} options={{headerShown: false}} />
       <Tab.Screen name={qrName} component={QRScreen} options={{headerShown: false}} />
-      <Tab.Screen name={profileName} component={ProfileScreen} options={{headerShown: false}} />
+      {/* <Tab.Screen name={profileName} component={ProfileScreen} options={{headerShown: false}} /> */}
+      <Tab.Screen name={history} component={History} options={{headerShown: false}}/>
       <Tab.Screen name={settingsName} component={SettingsScreen} options={{headerShown: false}}/>
     </Tab.Navigator>
   )
@@ -75,6 +85,7 @@ const MainContainer = () => {
           <Stack.Screen name= "Login" component={Login} options={{headerShown: false}}/>
           <Stack.Screen name= "Regis" component={Regis} options={{headerShown: false}}/>
           <Stack.Screen name= "Operation_Screen" component={Operation_Screen} options={{headerShown: false}}/>
+          <Stack.Screen name= "DetailsHistory" component={DetailsHistory} options={{headerShown: false}}/>
         </Stack.Navigator>
     </NavigationContainer>
   )

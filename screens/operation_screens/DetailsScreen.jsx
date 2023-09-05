@@ -3,12 +3,11 @@ import { View, Text, StyleSheet, Button } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import { auth, db } from '../../firebase/firebaseConfig';
-import { ref, onValue, update, set, get } from "firebase/database";
+import { ref, onValue, update, set } from "firebase/database";
 
 const DetailsScreen = () => {
     const [name, setName] = useState('');
     const [lastname, setLastname] = useState('');
-    const [historyId, setHistoryId] = useState(0)
 
     const [timeIn, setTimeIn] = useState('');
     const [timeOuts, setTimeOuts] = useState(new Date());
@@ -43,23 +42,6 @@ const DetailsScreen = () => {
                 setStatus(null);
             }
         });
-
-        const newHistoryRef = ref(db, `history/${userId}/historyId`);
-        get(newHistoryRef).then((snapshot) => {
-            if (snapshot.exists()) {
-              let count = 0;
-              snapshot.forEach(() => {
-                count++;
-              });
-              setHistoryId(count);
-              console.log('จำนวน subchildren ใน historyId: ', count);
-            } else {
-              console.log('ไม่มีข้อมูลในตำแหน่งนี้');
-            }
-          }).catch((error) => {
-            console.error('เกิดข้อผิดพลาดในการดึงข้อมูล: ', error);
-          });
-
     }, [])
 
     const outTime = () => {
@@ -89,9 +71,10 @@ const DetailsScreen = () => {
     }
 
     const WriteNewHistory = () => {
-        let num = 1;
+        const inputDate = date;
+        const formattedDate = inputDate.replace(/\//g, '-');
         const userId = auth.currentUser.uid;
-        const historyRef = ref(db, `history/${userId}/historyId/his${historyId+num}`);
+        const historyRef = ref(db, `history/${userId}/historyId/${formattedDate} ${timeIn}`);
         const newUpdatedHistory = {
             Name: name,
             LastName: lastname,
@@ -193,7 +176,7 @@ const DetailsScreen = () => {
                 status === 'in' ? (
                     <View>
                         <Text style={styles.textTitle}>Parking Code</Text>
-                        <Text style={{textAlign: 'center', marginTop: 30}}><AntDesign name="qrcode" size={100} color={'#BEBEBE'}></AntDesign></Text>
+                        <Text style={{textAlign: 'center', marginTop: 30}}><AntDesign name="qrcode" size={100} color={'#BEBEBE'}/></Text>
                         <View style={styles.listTitle}> 
                             <Text style={styles.fontTitle}>Name</Text>
                             <Text style={styles.fontTitle}>Surname</Text>
@@ -248,7 +231,7 @@ const DetailsScreen = () => {
                     </View>
                 ) : (
                 <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                    <Ionicons name="file-tray-outline" size={100} color={'#BEBEBE'}></Ionicons>
+                    <Ionicons name="file-tray-outline" size={100} color={'#BEBEBE'}/>
                     <Text>Empty</Text>
                 </View>
                 )

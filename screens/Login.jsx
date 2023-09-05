@@ -60,10 +60,10 @@ const Login = ({ navigation }) => {
                 {
                   showPassword == true ? (
                       <Icon  
-                            name="eye-with-line" size={30} color={'#BEBEBE'}></Icon>
+                            name="eye-with-line" size={30} color={'#BEBEBE'}/>
                   ) : (
                       <Icon 
-                            name="eye" size={30} color={'#BEBEBE'}></Icon>
+                            name="eye" size={30} color={'#BEBEBE'}/>
                   )
                 }
         </TouchableOpacity>

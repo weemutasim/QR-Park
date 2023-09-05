@@ -90,9 +90,9 @@ const Regis = ({ navigation }) => {
      <TouchableOpacity onPress={() => setShowPassword(!ShowPassword)} style={styles.eye}> 
       {
         ShowPassword == true ? (
-          <Icon name="eye-with-line" size={30} color={'#BEBEBE'}></Icon>
+          <Icon name="eye-with-line" size={30} color={'#BEBEBE'}/>
         ) : (
-          <Icon name="eye" size={30} color={'#BEBEBE'}></Icon>
+          <Icon name="eye" size={30} color={'#BEBEBE'}/>
         )
       }
     </TouchableOpacity>
