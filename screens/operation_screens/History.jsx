@@ -98,7 +98,10 @@ const History = ({navigation}) => {
         renderItem={({item}) => (
           <View style={styles.listItem}>
             <View style={{flex: 1}}>
-              <TouchableOpacity onPress={() => navigation.navigate('DetailsHistory', { itemKey: item.key })}>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('DetailsHistory', {itemKey: item.key})
+                }>
                 <Text
                   style={{
                     fontWeight: 'bold',
@@ -133,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingRight: 30,
-    paddingLeft: 20
+    paddingLeft: 20,
   },
   listItem: {
     padding: 20,

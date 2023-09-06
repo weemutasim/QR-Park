@@ -15,10 +15,6 @@ const DetailsHistory = ({route}) => {
     onValue(historyRef, snapshot => {
       if (snapshot.exists()) {
         const historyData = snapshot.val();
-        // const newHistoryData = Object.keys(historyData).map(key => ({
-        //   id: key,
-        //   ...historyData[key],
-        // }));
         setHistoryData([
           {
             name: historyData.Name,

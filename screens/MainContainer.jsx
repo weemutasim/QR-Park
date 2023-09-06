@@ -27,7 +27,7 @@ const homeName = "Home";
 const detailsName = "Details";
 // const profileName = "Profile";
 const qrName = "Scan"
-const history = "history";
+const history = "History";
 const settingsName = "Settings";
 
 const Operation_Screen = () => {
