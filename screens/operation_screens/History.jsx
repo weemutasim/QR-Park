@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import React, {useState, useEffect} from 'react';
 import {auth, db} from '../../firebase/firebaseConfig';
@@ -14,6 +15,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const History = ({navigation}) => {
   const [historyData, setHistoryData] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [filteredData, setFilteredData] = useState(historyData);
 
   useEffect(() => {
     const userId = auth.currentUser.uid;
@@ -34,6 +37,13 @@ const History = ({navigation}) => {
       }
     });
   }, []);
+
+  useEffect(() => {
+    const filteredResult = historyData.filter((item) =>
+      item.key.toLowerCase().includes(searchText.toLowerCase())
+    );
+    setFilteredData(filteredResult);
+  }, [searchText, historyData]);
 
   const deleteListHistory = hisId => {
     const userId = auth.currentUser.uid;
@@ -90,10 +100,21 @@ const History = ({navigation}) => {
           onPress={alertClearAllHistory}
         />
       </View>
+      <View style={{marginHorizontal: 20}}>
+        <TextInput 
+        placeholder='Search'
+        clearButtonMode='always'
+        autoCapitalize='none'
+        autoCorrect={false}
+        onChangeText={(text) => setSearchText(text)}
+        value={searchText}
+        style={styles.searchBox}
+        />
+      </View>
       <FlatList
-        // showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{padding: 20, paddingBottom: 100}}
-        data={historyData}
+        data={filteredData}
         keyExtractor={item => item.key}
         renderItem={({item}) => (
           <View style={styles.listItem}>
@@ -130,7 +151,7 @@ const styles = StyleSheet.create({
     //alignItems: 'center',
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 20,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,6 +167,13 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     marginVertical: 10,
   },
-});
+  searchBox: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8
+  }
+})
 
 export default History;
