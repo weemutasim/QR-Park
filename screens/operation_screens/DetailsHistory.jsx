@@ -1,17 +1,21 @@
-import {View, Text, StyleSheet} from 'react-native';
-import React, {useState, useEffect} from 'react';
-import AntDesign from 'react-native-vector-icons/AntDesign';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import React, {useState, useEffect, useContext} from 'react';
 import {auth, db} from '../../firebase/firebaseConfig';
 import {ref, onValue} from 'firebase/database';
+import QRCode from 'react-native-qrcode-svg';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
-const DetailsHistory = ({route}) => {
+import {COLORS} from '../component/Themes';
+import { IdContext } from '../../App';
+
+const DetailsHistory = ({route, navigation}) => {
+  const { adminKey } = useContext(IdContext);
   const [historyData, setHistoryData] = useState([]);
   const {itemKey} = route.params;
-  // console.log('itemKey >>> ', itemKey);
 
   useEffect(() => {
     const userId = auth.currentUser.uid;
-    const historyRef = ref(db, `/history/${userId}/historyId/${itemKey}`);
+    const historyRef = ref(db, `/history/${adminKey}${userId}/historyUser/${itemKey}`);
     onValue(historyRef, snapshot => {
       if (snapshot.exists()) {
         const historyData = snapshot.val();
@@ -25,6 +29,7 @@ const DetailsHistory = ({route}) => {
             outTime: historyData.OutTime,
             status: historyData.Status,
             price: historyData.Money,
+            uid: historyData.uid
           },
         ]);
         console.log('newHistoryData', historyData);
@@ -36,9 +41,17 @@ const DetailsHistory = ({route}) => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={{paddingTop: 20, left: 15}}
+        onPress={() => navigation.goBack()}>
+        <MaterialIcons
+          name="arrow-back-ios-new"
+          style={{fontSize: 25, color: COLORS.blue}}
+        />
+      </TouchableOpacity>
       <Text style={styles.textTitle}>Parking Code</Text>
-      <Text style={{textAlign: 'center', marginTop: 30}}>
-        <AntDesign name="qrcode" size={100} color={'#BEBEBE'} />
+      <Text style={{textAlign: 'center', marginTop: 40, paddingBottom: 40}}>
+        <QRCode value = {historyData.uid} size={130}/>
       </Text>
       {historyData.map((item, index) => (
         <View key={index}>
@@ -89,12 +102,12 @@ const styles = StyleSheet.create({
   textTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 100,
+    marginTop: 50,
     textAlign: 'center',
     color: '#000000',
   },
   qr: {
-    marginTop: 30,
+    marginTop: 20,
     textAlign: 'center',
     color: '#000000',
     // width: 170,

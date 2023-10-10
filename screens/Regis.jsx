@@ -1,167 +1,168 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  Alert,
-} from 'react-native';
-import React, {useEffect, useState} from 'react';
-import Icon from 'react-native-vector-icons/Entypo';
+import {View, Text, TouchableOpacity, Alert, Keyboard} from 'react-native';
+import React, { useState} from 'react';
 import {createUserWithEmailAndPassword} from 'firebase/auth';
 import {auth, db} from '../firebase/firebaseConfig';
 import {ref, set} from 'firebase/database';
 
+import {COLORS} from './component/Themes';
+import Input from './component/Input';
+import Button from './component/Button';
+import Loader from './component/Loader';
+
 const Regis = ({navigation}) => {
-  const [ShowPassword, setShowPassword] = useState(true);
+  const [inputs, setInputs] = useState({
+    email: '',
+    fullname: '',
+    lastname: '',
+    password: '',
+  });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const [name, setName] = useState('');
-  const [surename, setSurename] = useState('');
-  const [email, setEmail] = useState('');
-  const [userName, setUserName] = useState('');
-  const [password, setPassword] = useState('');
+  const validate = () => {
+    Keyboard.dismiss();
+    let isValid = true;
 
-  const RegisterUser = async () => {
+    if (!inputs.email) {
+      handleError('Please input email', 'email');
+      isValid = false;
+    } else if (!inputs.email.match(/\S+@\S+\.\S+/)) {
+      handleError('Please input a valid email', 'email');
+      isValid = false;
+    }
+
+    if (!inputs.fullname) {
+      handleError('Please input fullname', 'fullname');
+      isValid = false;
+    }
+
+    if (!inputs.lastname) {
+      handleError('Please input lastname', 'lastname');
+      isValid = false;
+    }
+
+    if (!inputs.password) {
+      handleError('Please input password', 'password');
+      isValid = false;
+    } else if (inputs.password.length < 6) {
+      handleError('Min password length of 6', 'password');
+      isValid = false;
+    }
+
+    if (isValid) {
+      register();
+    }
+  };
+
+  const handleOnchange = (text, input) => {
+    setInputs(prevState => ({...prevState, [input]: text}));
+  };
+  const handleError = (error, input) => {
+    setErrors(prevState => ({...prevState, [input]: error}));
+  };
+
+  const register = async () => {
+    setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
+        const userCredential = await createUserWithEmailAndPassword(
         auth,
-        email,
-        password,
+        inputs.email,
+        inputs.password,
       );
-      const user = userCredential.user;
-      navigation.navigate('Operation_Screen');
-      // Alert.alert('Registration Successful');
-      console.log(`User with email ${user.email} has been registered.`);
-
-      const userId = auth.currentUser.uid;
-      set(ref(db, 'users/' + userId), {
-        name: name,
-        lastname: surename,
-        username: userName,
-        email: email,
-        password: password,
-      })
-        .then(() => {
-          console.log('write history complete!');
+      if (userCredential) {
+        const userId = auth.currentUser.uid;
+        set(ref(db, 'users/' + userId), {
+          fullname: inputs.fullname,
+          lastname: inputs.lastname,
+          email: inputs.email,
+          password: inputs.password,
         })
-        .catch(error => {
-          console.error('Error written documents: ', error);
-        });
+          .then(() => {
+            console.log('write history complete!');
+          })
+          .catch(error => {
+            console.error('Error written documents: ', error);
+          });
+        navigation.navigate('Operation_Screen');
+
+      } else {
+        Alert.alert('เข้าสู้ระบบผิดพลาด', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', [{text: 'ตกลง'}]);
+      }
     } catch (error) {
-      console.log(error.message);
-      console.log(error.code);
-      Alert.alert('Registration Failed');
+      console.log('Login Error:', error);
+      Alert.alert('เข้าสู้ระบบผิดพลาด', 'อีเมลถูกใช้งานแล้ว', [{text: 'ตกลง'}]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{height: '100%', paddingTop: 100, backgroundColor: 'white'}}>
-      <Text
-        style={{
-          fontSize: 24,
-          color: 'black',
-          marginHorizontal: 50,
-          fontWeight: 'bold',
-        }}>
-        Get Started
-      </Text>
-      <Text style={{fontSize: 13, marginHorizontal: 50, paddingBottom: 40}}>
-        Let's create your account!
-      </Text>
-      <TextInput
-        style={styles.input}
-        onChangeText={name => setName(name)}
-        value={name}
-        placeholder="Name"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={surename => setSurename(surename)}
-        value={surename}
-        placeholder="Surename"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={email => setEmail(email)}
-        value={email}
-        placeholder="Email"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={userName => setUserName(userName)}
-        value={userName}
-        placeholder="User Name"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={password => {
-          setPassword(password);
-        }}
-        value={password}
-        placeholder="Password"
-        secureTextEntry={ShowPassword}
-      />
-      <TouchableOpacity
-        onPress={() => setShowPassword(!ShowPassword)}
-        style={styles.eye}>
-        {ShowPassword == true ? (
-          <Icon name="eye-with-line" size={30} color={'#BEBEBE'} />
-        ) : (
-          <Icon name="eye" size={30} color={'#BEBEBE'} />
-        )}
-      </TouchableOpacity>
-      <View style={{alignItems: 'center', paddingTop: 40}}>
-        <TouchableOpacity onPress={RegisterUser} style={styles.button}>
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'center',
-            paddingTop: 5,
-          }}>
-          <Text style={{fontSize: 14, color: '#000000'}}>
-            Already have an account?{' '}
-          </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={{fontSize: 14, color: '#000000', fontWeight: 'bold'}}>
-              Sign In
+    <View style={{backgroundColor: COLORS.white, flex: 1}}>
+      <Loader visible={loading} />
+      <View style={{paddingTop: 30, paddingHorizontal: 30}}>
+        <Text style={{color: COLORS.black, fontSize: 25, fontWeight: 'bold'}}>
+          Get Started
+        </Text>
+        <Text style={{color: COLORS.grey, fontSize: 18}}>
+          Let's create your account!
+        </Text>
+        <View style={{marginVertical: 40}}>
+          <Input
+            onChangeText={text => handleOnchange(text, 'fullname')}
+            onFocus={() => handleError(null, 'fullname')}
+            iconName="account-outline"
+            label="Full Name"
+            placeholder="Enter your full name"
+            error={errors.fullname}
+          />
+
+          <Input
+            onChangeText={text => handleOnchange(text, 'lastname')}
+            onFocus={() => handleError(null, 'lastname')}
+            iconName="account-outline"
+            label="Last Name"
+            placeholder="Enter your lastname"
+            error={errors.lastname}
+          />
+
+          <Input
+            onChangeText={text => handleOnchange(text, 'email')}
+            onFocus={() => handleError(null, 'email')}
+            iconName="email-outline"
+            label="Email"
+            placeholder="Enter your email address"
+            error={errors.email}
+          />
+          <Input
+            onChangeText={text => handleOnchange(text, 'password')}
+            onFocus={() => handleError(null, 'password')}
+            iconName="lock-outline"
+            label="Password"
+            placeholder="Enter your password"
+            error={errors.password}
+            password
+          />
+          <Button title="Register" onPress={validate} />
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+            }}>
+            <Text style={{fontSize: 14, color: '#000000'}}>
+              Already have an account?{' '}
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text
+                style={{fontSize: 14, color: '#000000', fontWeight: 'bold'}}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  input: {
-    borderWidth: 0.5,
-    padding: 15,
-    fontSize: 16,
-    marginTop: 20,
-    borderRadius: 50,
-    marginHorizontal: 30,
-  },
-  eye: {
-    position: 'absolute',
-    right: 50,
-    paddingTop: 540,
-  },
-  button: {
-    backgroundColor: '#097AFF',
-    paddingVertical: 20,
-    width: '80%',
-    borderRadius: 15,
-  },
-  buttonText: {
-    fontSize: 16,
-    marginHorizontal: 30,
-    textAlign: 'center',
-    color: 'white',
-    fontWeight: 'bold',
-  },
-});
 
 export default Regis;

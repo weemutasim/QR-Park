@@ -16,7 +16,7 @@ const Splash = ({navigation}) => {
       })
       .catch(error => {
         console.error('เกิดข้อผิดพลาดในการดึง URL ของรูปภาพ:', error);
-      });
+      }).finally( {})
   }, []);
 
   return (

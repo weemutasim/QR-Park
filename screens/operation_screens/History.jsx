@@ -5,22 +5,27 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  TextInput,
 } from 'react-native';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useContext} from 'react';
 import {auth, db} from '../../firebase/firebaseConfig';
 import {ref, onValue, remove} from 'firebase/database';
 import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Input from '../component/Input';
+
+import {COLORS} from '../component/Themes';
+import { IdContext } from '../../App';
 
 const History = ({navigation}) => {
+  const { adminKey } = useContext(IdContext);
+
   const [historyData, setHistoryData] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [filteredData, setFilteredData] = useState(historyData);
 
   useEffect(() => {
     const userId = auth.currentUser.uid;
-    const historyRef = ref(db, `/history/${userId}/historyId`);
+    const historyRef = ref(db, `/history/${adminKey}${userId}/historyUser`);
     onValue(historyRef, snapshot => {
       if (snapshot.exists()) {
         const historyData = snapshot.val();
@@ -47,7 +52,7 @@ const History = ({navigation}) => {
 
   const deleteListHistory = hisId => {
     const userId = auth.currentUser.uid;
-    const historyRef = ref(db, `/history/${userId}/historyId/${hisId}`);
+    const historyRef = ref(db, `/history/${adminKey}${userId}/historyUser/${hisId}`);
     remove(historyRef)
       .then(() => {
         console.log('ลบข้อมูลเรียบร้อยแล้ว');
@@ -59,20 +64,20 @@ const History = ({navigation}) => {
   };
 
   const alertClearAllHistory = () => {
-    Alert.alert('Confirm', 'Clear History?', [
+    Alert.alert('ยืนยันการลบข้อมูลทั้งหมด', 'คุณต้องกาลบข้อมูลทั้งหมดรือไม่?', [
       {
-        text: 'Yes',
+        text: 'ตกลง',
         onPress: () => clearAllHistory(),
       },
       {
-        text: 'No',
+        text: 'ยกเลิก'
       },
     ]);
   };
 
   const clearAllHistory = () => {
     const userId = auth.currentUser.uid;
-    const historyRef = ref(db, `/history/${userId}/historyId`);
+    const historyRef = ref(db, `/history/${adminKey}${userId}/historyId`);
     remove(historyRef)
       .then(() => {
         console.log('ลบข้อมูลเรียบร้อยแล้ว');
@@ -83,7 +88,7 @@ const History = ({navigation}) => {
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text
           style={{
@@ -95,20 +100,18 @@ const History = ({navigation}) => {
         </Text>
         <Feather
           name="trash-2"
-          size={25}
-          color={'#BEBEBE'}
+          style={{color: COLORS.darkBlue, fontSize: 25}}
           onPress={alertClearAllHistory}
         />
       </View>
       <View style={{marginHorizontal: 20}}>
-        <TextInput 
+        <Input 
         placeholder='Search'
-        clearButtonMode='always'
         autoCapitalize='none'
         autoCorrect={false}
         onChangeText={(text) => setSearchText(text)}
         value={searchText}
-        style={styles.searchBox}
+        // style={styles.searchBox}
         />
       </View>
       <FlatList
@@ -134,7 +137,7 @@ const History = ({navigation}) => {
             </View>
             <TouchableOpacity onPress={() => deleteListHistory(item.key)}>
               <View>
-                <Ionicons name="trash-bin" size={20} color={'#BEBEBE'} />
+                <Ionicons name="trash-bin" style={{color: COLORS.darkBlue, fontSize: 20}} />
               </View>
             </TouchableOpacity>
           </View>
@@ -147,12 +150,12 @@ const History = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#EEF7FF'
+    backgroundColor: COLORS.white
     //alignItems: 'center',
   },
   header: {
     paddingTop: 20,
-    padding: 20,
+    // padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -167,13 +170,6 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     marginVertical: 10,
   },
-  searchBox: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8
-  }
 })
 
 export default History;

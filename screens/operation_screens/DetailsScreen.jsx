@@ -1,53 +1,56 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useContext} from 'react';
 import {View, Text, StyleSheet, Button} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import AntDesign from 'react-native-vector-icons/AntDesign';
 import {auth, db} from '../../firebase/firebaseConfig';
 import {ref, onValue, update, set} from 'firebase/database';
+import QRCode from 'react-native-qrcode-svg';
+
+import {COLORS, SIZES} from '.././component/Themes';
+import { IdContext } from '../../App';
 
 const DetailsScreen = () => {
-  const [name, setName] = useState('');
-  const [lastname, setLastname] = useState('');
-  const [settingPrice, setSettingPrices] = useState(0);
+  const { adminKey } = useContext(IdContext);
 
-  const [timeIn, setTimeIn] = useState('');
+  const [getName, setGetName] = useState({});
+  const [getDetail, setGetDetail] = useState({});
   const [timeOuts, setTimeOuts] = useState(new Date());
-  const [date, setDate] = useState('');
   const [dateTo, setDateTo] = useState(new Date());
-  const [status, setStatus] = useState('');
+  const [settingPrice, setSettingPrices] = useState(0);
 
   useEffect(() => {
     const userId = auth.currentUser.uid;
-    const usersRef = ref(db, `/users/${userId}`);
+    const usersRef = ref(db, 'users/' + userId);
     onValue(usersRef, snapshot => {
       if (snapshot.exists()) {
         const userData = snapshot.val();
-        setName(userData.name);
-        setLastname(userData.lastname);
+        const newInputs = {
+          fullname: userData.fullname,
+          lastname: userData.lastname,
+        };
+        setGetName(newInputs);
       } else {
-        setName([null]);
-        setLastname([null]);
+        setGetName({fullname: null, lastname: null});
       }
     });
 
-    const historyRef = ref(db, `/history/${userId}`);
+    const historyRef = ref(db, 'history/' + adminKey + userId);
     onValue(historyRef, snapshot => {
       if (snapshot.exists()) {
         const historyData = snapshot.val();
-        setDate(historyData.HisDate);
-        setTimeIn(historyData.InTime);
-        setStatus(historyData.Status);
+        const newInputs = {
+          date: historyData.HisDate,
+          timeIn: historyData.InTime,
+          status: historyData.Status,
+          uid: historyData.Uid
+        }
+        setGetDetail(newInputs);
       } else {
-        setDate(null);
-        setTimeIn(null);
-        setStatus(null);
+        setGetDetail({date: null, timeIn: null, status: null, aid: null})
       }
     });
-  }, []);
 
-  useEffect(() => {
-    const historyRef = ref(db, '/setting');
-    onValue(historyRef, snapshot => {
+    const settingRef = ref(db, '/setting');
+    onValue(settingRef, snapshot => {
       if (snapshot.exists()) {
         const settingData = snapshot.val();
         setSettingPrices(settingData.price);
@@ -64,12 +67,13 @@ const DetailsScreen = () => {
     setTimeOuts(newCurrent);
     Calculate();
     updateHistory();
-    WriteNewHistory();
+    WriteNewHistoryUser();
+    WriteNewHistoryAdmin();
   };
 
   const updateHistory = () => {
     const userId = auth.currentUser.uid;
-    const historyRef = ref(db, `/history/${userId}`);
+    const historyRef = ref(db, 'history/' + adminKey + userId);
     const updatedHistory = {
       OutTime: timeOuts.toLocaleTimeString(),
       Money: Calculate(),
@@ -84,23 +88,24 @@ const DetailsScreen = () => {
       });
   };
 
-  const WriteNewHistory = () => {
-    const inputDate = date;
+  const WriteNewHistoryUser = () => {
+    const inputDate = getDetail.date;
     const formattedDate = inputDate.replace(/\//g, '-');
     const userId = auth.currentUser.uid;
     const historyRef = ref(
       db,
-      `history/${userId}/historyId/${formattedDate} ${timeIn}`,
+      `history/${adminKey}${userId}/historyUser/${formattedDate} ${getDetail.timeIn}`,
     );
     const newUpdatedHistory = {
-      Name: name,
-      LastName: lastname,
-      HisDate: date,
+      Name: getName.fullname,
+      LastName: getName.lastname,
+      HisDate: getDetail.date,
       DateTo: dateTo.toLocaleDateString(),
-      InTime: timeIn,
+      InTime: getDetail.timeIn,
       OutTime: timeOuts.toLocaleTimeString(),
       Status: 'out',
       Money: Calculate(),
+      Uid: getDetail.uid,
     };
     set(historyRef, newUpdatedHistory)
       .then(() => {
@@ -111,8 +116,36 @@ const DetailsScreen = () => {
       });
   };
 
+  const WriteNewHistoryAdmin = () => {
+    const inputDate = getDetail.date;
+    const formattedDate = inputDate.replace(/\//g, '-');
+    const userId = auth.currentUser.uid;
+    const historyRef = ref(
+      db,
+      `history/${adminKey}${userId}/historyAdmin/${getName.fullname} ${getName.lastname} ${formattedDate}`,
+    );
+    const newUpdatedHistory = {
+      Name: getName.fullname,
+      LastName: getName.lastname,
+      HisDate: getDetail.date,
+      DateTo: dateTo.toLocaleDateString(),
+      InTime: getDetail.timeIn,
+      OutTime: timeOuts.toLocaleTimeString(),
+      Status: 'out',
+      Money: Calculate(),
+      Uid: getDetail.uid,
+    };
+    set(historyRef, newUpdatedHistory)
+      .then(() => {
+        console.log('เพิ่มกิ่งใหม่สำเร็จ');
+      })
+      .catch(error => {
+        console.error('เกิดข้อผิดพลาดในการเพิ่มกิ่งใหม่:', error);
+      });
+  }
+
   const Calculate = () => {
-    const timePartsIn = timeIn.split(':');
+    const timePartsIn = getDetail.timeIn.split(':');
     const startHours = parseInt(timePartsIn[0]);
     const startMinutes = parseInt(timePartsIn[1]);
 
@@ -131,7 +164,7 @@ const DetailsScreen = () => {
       houre = 0,
       minute = 0;
     let timeDifferenceInMinutes = 0;
-    
+
     if (sumMinutes >= 30) {
       //จอดน้อยกว่า 30 นาที่ ไม่คิดค่าบริการ
       if (startHours >= 21 && endHours < 6) {
@@ -198,29 +231,30 @@ const DetailsScreen = () => {
 
   return (
     <View style={styles.container}>
-      {status === 'in' ? (
+      {getDetail.status === 'in' ? (
         <View>
           <Text style={styles.textTitle}>Parking Code</Text>
-          <Text style={{textAlign: 'center', marginTop: 30}}>
-            <AntDesign name="qrcode" size={100} color={'#BEBEBE'} />
-          </Text>
+          <View style={{marginTop: 30, alignItems: 'center'}}>
+            <QRCode value={getDetail.aid} />
+          </View>
           <View style={styles.listTitle}>
             <Text style={styles.fontTitle}>Name</Text>
             <Text style={styles.fontTitle}>Surname</Text>
           </View>
           <View style={styles.listName}>
-            <Text style={styles.fontName}>{name}</Text>
-            <Text style={styles.fontName}>{lastname}</Text>
+            <Text style={styles.fontName}>{getName.fullname}</Text>
+            <Text style={styles.fontName}>{getName.lastname}</Text>
           </View>
           <View style={styles.listTitle}>
             <Text style={styles.fontTitle}>InTime</Text>
             <Text style={styles.fontTitle}>OutTime</Text>
           </View>
           <View style={styles.listName}>
-            <Text style={styles.fontName}>{timeIn}</Text>
-            {status === 'in' ? null : (
+            <Text style={styles.fontName}>{getDetail.timeIn}</Text>
+            {getDetail.status === 'in' ? null : (
               <Text style={styles.fontName}>
-                {timeOuts.toLocaleTimeString()}</Text>
+                {timeOuts.toLocaleTimeString()}
+              </Text>
             )}
           </View>
           <View style={styles.listTitle}>
@@ -228,8 +262,8 @@ const DetailsScreen = () => {
             <Text style={styles.fontTitle}>Date To</Text>
           </View>
           <View style={styles.listName}>
-            <Text style={styles.fontName}>{date}</Text>
-            {status === 'in' ? null : (
+            <Text style={styles.fontName}>{getDetail.date}</Text>
+            {getDetail.status === 'in' ? null : (
               <Text style={styles.fontName}>{dateTo.toLocaleDateString()}</Text>
             )}
           </View>
@@ -238,8 +272,8 @@ const DetailsScreen = () => {
             <Text style={styles.fontTitle}>Price</Text>
           </View>
           <View style={styles.listName}>
-            <Text style={styles.fontName}>{status}</Text>
-            {status === 'in' ? null : (
+            <Text style={styles.fontName}>{getDetail.status}</Text>
+            {getDetail.status === 'in' ? null : (
               <Text style={styles.fontName}>{Calculate()}</Text>
             )}
           </View>
@@ -257,8 +291,11 @@ const DetailsScreen = () => {
         </View>
       ) : (
         <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-          <Ionicons name="file-tray-outline" size={100} color={'#BEBEBE'} />
-          <Text>Empty</Text>
+          <Ionicons
+            name="file-tray-outline"
+            style={{fontSize: 100, color: COLORS.blue}}
+          />
+          <Text>ไม่มีข้อมูล</Text>
         </View>
       )}
     </View>
@@ -268,13 +305,13 @@ const DetailsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#EEF7FF'
+    backgroundColor: COLORS.white,
     //alignItems: 'center',
   },
   textTitle: {
-    fontSize: 24,
+    fontSize: SIZES.h1,
     fontWeight: 'bold',
-    marginTop: 100,
+    marginTop: 70,
     textAlign: 'center',
     color: '#000000',
   },
@@ -304,7 +341,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   fontName: {
-    fontSize: 16,
+    fontSize: SIZES.h2,
     color: '#000000',
   },
 });

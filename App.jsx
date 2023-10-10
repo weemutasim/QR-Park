@@ -1,11 +1,17 @@
-import React, { useContext, createContext } from 'react'
-import MainContainer from './screens/MainContainer'
+import React, {createContext, useState} from 'react';
+import MainContainer from './screens/MainContainer';
+
+const IdContext = createContext();
 
 const App = () => {
+  const [adminKey, setAdminKey] = useState('');
+
   return (
-    <MainContainer />
-  )
-}
+    <IdContext.Provider value={{ adminKey, setAdminKey }}>
+      <MainContainer />
+    </IdContext.Provider>
+  );
+};
 
-
-export default App
+export { IdContext }
+export default App;

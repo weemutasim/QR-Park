@@ -42,8 +42,7 @@ const SplashFast = ({navigation}) => {
             marginHorizontal: 30,
             marginVertical: 30,
           }}>
-          You can check the available parking spaces of the parking first, so as
-          not to waste time If the parking is full
+          You can check the available parking spaces of the parking first, so as not to waste time If the parking is full
         </Text>
       </View>
       <View

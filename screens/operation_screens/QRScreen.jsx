@@ -1,23 +1,27 @@
 import {View, Text, StyleSheet, TouchableOpacity, Alert} from 'react-native';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useContext} from 'react';
 import {RNCamera} from 'react-native-camera';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {auth, db} from '../../firebase/firebaseConfig';
 import {ref, set, onValue, update} from 'firebase/database';
 
+import {IdContext} from '../../App';
+
 const QRScreen = ({navigation}) => {
-  const [data, setData] = useState(null);
+  const {adminKey} = useContext(IdContext);
+
+  const [data, setData] = useState('');
   const [maximumPark, setMaximumPark] = useState(0);
   const [flash, setFlash] = useState(RNCamera.Constants.FlashMode.off);
-
   const [timeIn, setTimeIn] = useState(new Date());
   const [dateFrom, setDateFrom] = useState(new Date());
   const [status, setStatus] = useState('');
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
     const userId = auth.currentUser.uid;
-    const historyRef = ref(db, `/history/${userId}`);
+    const historyRef = ref(db, 'history/' + adminKey + userId);
     onValue(historyRef, snapshot => {
       if (snapshot.exists()) {
         const history = snapshot.val();
@@ -29,8 +33,8 @@ const QRScreen = ({navigation}) => {
   }, []);
 
   useEffect(() => {
-    const historyRef = ref(db, '/setting');
-    onValue(historyRef, snapshot => {
+    const settingRef = ref(db, '/setting');
+    onValue(settingRef, snapshot => {
       if (snapshot.exists()) {
         const settingData = snapshot.val();
         setMaximumPark(settingData.capacity);
@@ -41,58 +45,90 @@ const QRScreen = ({navigation}) => {
     });
   }, []);
 
+  const isCount = () => {
+
+      const settingRef = ref(db, '/setting'); // เปลี่ยนเป็น '/setting'
+      update(settingRef, { setCount (count + 1) })
+        .then(() => {
+          // อัพเดตสำเร็จ
+        })
+        .catch((error) => {
+          console.error('เกิดข้อผิดพลาดในการอัพเดตค่า count:', error);
+        });
+
+  }
+
+  const check = admindata => {
+    let key;
+    const adminRef = ref(db, '/admin');
+    onValue(adminRef, snapshot => {
+      const admin = snapshot.val();
+      for (key of Object.keys(admin)) {
+        if (key.startsWith(admindata)) {
+          // console.log(`NO As: ${key}`);
+        }
+      }
+    });
+    return key;
+  };
+
   const qrcodeRead = event => {
     let isScann = false;
-    if (event.data === '8851552108001' && maximumPark > false) {
+    setData(event.data);
+    let isvalid = check(event.data);
+    if (event.data === isvalid && count < maximumPark) {
       if ((!isScann && !status) || (!isScann && status === 'out')) {
         const currentTime = new Date();
         setDateFrom(currentTime);
         setTimeIn(currentTime);
         writeData();
+        isCount();
+        // writeDataAdmin();
         navigation.navigate('Details');
         isScann = true;
       } else {
-        Alert.alert('คุณได้สแกนแล้ว!');
+        Alert.alert('กำลังใช้งาน...', 'คุณได้สแกนแล้ว!');
       }
     } else {
       console.log('Wrong QR code');
-      Alert.alert('คิวอาร์โค้ดไม่ถูกต้อง!');
+      Alert.alert('คิวอาร์โค้ดไม่ถูกต้อง!', 'โปรดลองใหม่อีกครั้ง');
     }
-    setData(event.data);
   };
 
   const writeData = () => {
     const userId = auth.currentUser.uid;
     if (status === 'out') {
       const userId = auth.currentUser.uid;
-      const historyRef = ref(db, `/history/${userId}`);
+      const historyRef = ref(db, 'history/' + data + userId);
       const updatedHistory = {
         HisDate: dateFrom.toLocaleDateString(),
         InTime: timeIn.toLocaleTimeString(),
         OutTime: '',
         Status: 'in',
         Money: 0,
+        Uid: data + userId,
       };
       update(historyRef, updatedHistory)
         .then(() => {
           console.log('Data has been updated successfully:', updatedHistory);
         })
         .catch(error => {
-          console.error('Error updating data:', error);
+          console.log('Error updating data:', error);
         });
     } else {
-      set(ref(db, 'history/' + userId), {
+      set(ref(db, 'history/' + data + userId), {
         HisDate: dateFrom.toLocaleDateString(),
         InTime: timeIn.toLocaleTimeString(),
         OutTime: '',
         Status: 'in',
         Money: 0,
+        Uid: data + userId,
       })
         .then(() => {
           console.log('write history complete!');
         })
         .catch(error => {
-          console.error('Error written documents: ', error);
+          console.log('Error written documents: ', error);
         });
     }
   };
@@ -132,11 +168,8 @@ const QRScreen = ({navigation}) => {
               margin: 10,
               color: '#000000',
             }}>
-            {data}
+            {/* {data} */}
           </Text>
-          {/* <Text>Scanned Time in : {timeIn}</Text>
-            <Text>Scanned Time out : {timeOut}</Text>
-            <Text>Scanned Time date : {date}</Text> */}
         </View>
       }
     />

@@ -1,155 +1,137 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import {Text, View, Keyboard, Alert, TouchableOpacity} from 'react-native';
 import React, {useState} from 'react';
-import Icon from 'react-native-vector-icons/Entypo';
-import {signInWithEmailAndPassword} from 'firebase/auth';
 import {auth} from '../firebase/firebaseConfig';
+import {signInWithEmailAndPassword} from 'firebase/auth';
+
+import {COLORS} from './component/Themes';
+import Button from './component/Button';
+import Input from './component/Input';
+import Loader from './component/Loader';
 
 const Login = ({navigation}) => {
-  const [showPassword, setShowPassword] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isValidEmail, setIsValidEmail] = useState(true);
+  const [inputs, setInputs] = useState({email: '', password: ''});
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
-  const checkEmail = text => {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValid = emailPattern.test(text);
-    setIsValidEmail(isValid);
+  const validate = () => {
+    Keyboard.dismiss();
+    let isValid = true;
+    if (!inputs.email) {
+      handleError('Please input email', 'email');
+      isValid = false;
+    }
+    if (!inputs.password) {
+      handleError('Please input password', 'password');
+      isValid = false;
+    } else if (inputs.password.length < 6) {
+      handleError('Min password length of 6', 'password');
+      isValid = false;
+    }
+    if (isValid) {
+      login();
+    }
   };
 
-  const SingInUser = async () => {
+  const handleOnchange = (text, input) => {
+    setInputs(prevState => ({...prevState, [input]: text}));
+  };
+
+  const handleError = (error, input) => {
+    setErrors(prevState => ({...prevState, [input]: error}));
+  };
+
+  const login = async () => {
+    setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        email,
-        password,
+        inputs.email,
+        inputs.password,
       );
-      const user = userCredential.user;
-      navigation.navigate('Operation_Screen');
-      // Alert.alert('Login Successful');
-      console.log(`User with email ${user.email} has been logged in.`);
+      if (userCredential) {
+        navigation.navigate('Operation_Screen');
+      } else {
+        Alert.alert('เข้าสู้ระบบผิดพลาด', 'ไม่พบผู้ใช้', [{text: 'ตกลง'}]);
+      }
     } catch (error) {
-      Alert.alert('Login Failed');
-      console.log(error.message);
-      console.log(error.code);
+      console.log('Login Error:', error);
+      Alert.alert('เข้าสู้ระบบผิดพลาด', 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', [
+        {text: 'ตกลง'},
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{height: '100%', paddingTop: 100, backgroundColor: 'white'}}>
-      <Text style={styles.text}>Glad to see you!</Text>
-      <View style={{paddingTop: 50}}>
-        <Text style={styles.lable}>Email Address</Text>
-        {isValidEmail ? null : (
-          <Text style={{color: 'red', paddingLeft: 50}}>
-            Email is not valid.
-          </Text>
-        )}
-        <TextInput
-          style={styles.input}
-          onChangeText={text => {
-            setEmail(text), checkEmail(text);
-          }}
-          value={email}
-          placeholder="Email Address"
-        />
-        <Text style={styles.lable}>Password</Text>
-
-        <View style={{paddingTop: 5}}>
-          <TextInput
-            style={styles.input}
-            onChangeText={password => setPassword(password)}
-            value={password}
-            placeholder="Password"
-            secureTextEntry={showPassword}
+    <View style={{backgroundColor: COLORS.white, flex: 1}}>
+      <Loader visible={loading} />
+      <View style={{paddingTop: 100, paddingHorizontal: 30}}>
+        <Text
+          style={{
+            color: COLORS.black,
+            fontSize: 24,
+            fontWeight: 'bold',
+            textAlign: 'center',
+          }}>
+          Welcome,
+        </Text>
+        <Text
+          style={{
+            color: COLORS.black,
+            fontSize: 24,
+            fontWeight: 'bold',
+            textAlign: 'center',
+          }}>
+          Glad to see you!
+        </Text>
+        <View style={{marginVertical: 20, paddingTop: 30}}>
+          <Input
+            onChangeText={text => handleOnchange(text, 'email')}
+            onFocus={() => handleError(null, 'email')}
+            label="Email"
+            placeholder="Enter your email address"
+            error={errors.email}
           />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={{position: 'absolute', right: 50, paddingTop: 30}}>
-            {showPassword == true ? (
-              <Icon name="eye-with-line" size={30} color={'#BEBEBE'} />
-            ) : (
-              <Icon name="eye" size={30} color={'#BEBEBE'} />
-            )}
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity>
-          <Text
-            style={{color: '#000000', textAlign: 'right', paddingRight: 40}}>
-            Forgot Password?
-          </Text>
-        </TouchableOpacity>
-        <View style={{alignItems: 'center', paddingTop: 170}}>
-          <TouchableOpacity
-            onPress={SingInUser} //() => navigation.navigate('Operation_Screen')}
-            style={{
-              backgroundColor: '#097AFF',
-              paddingVertical: 20,
-              width: '80%',
-              borderRadius: 15,
-            }}>
+          <Input
+            onChangeText={text => handleOnchange(text, 'password')}
+            onFocus={() => handleError(null, 'password')}
+            label="Password"
+            placeholder="Enter your password"
+            error={errors.password}
+            password
+          />
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
             <Text
               style={{
-                fontSize: 20,
-                marginHorizontal: 30,
-                textAlign: 'center',
-                color: 'white',
-                fontWeight: 'bold',
+                color: COLORS.black,
+                paddingLeft: '60%',
               }}>
-              Login
+              Forgot Password?
             </Text>
           </TouchableOpacity>
-          <View
-            style={{
-              flexDirection: 'row',
-              display: 'flex',
-              justifyContent: 'center',
-              paddingTop: 5,
-            }}>
-            <Text style={{fontSize: 14, color: '#000000'}}>
-              Don't have an account ?{' '}
-            </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Regis')}>
-              <Text
-                style={{fontSize: 14, fontWeight: 'bold', color: '#000000'}}>
-                Sign Up{' '}
-              </Text>
-            </TouchableOpacity>
-            <Text style={{fontSize: 14, color: '#000000'}}>Now</Text>
-          </View>
         </View>
+        <View style={{paddingTop: 110}}>
+          <Button title="Log In" onPress={validate} />
+        </View>
+      </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+        }}>
+        <Text style={{fontSize: 14, color: '#000000'}}>
+          Don't have an account ?{' '}
+        </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Regis')}>
+          <Text style={{fontSize: 14, fontWeight: 'bold', color: '#000000'}}>
+            Sign Up{' '}
+          </Text>
+        </TouchableOpacity>
+        <Text style={{fontSize: 14, color: '#000000'}}>Now</Text>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  text: {
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  input: {
-    borderWidth: 0.5,
-    padding: 15,
-    fontSize: 16,
-    marginTop: 10,
-    borderRadius: 50,
-    marginHorizontal: 30,
-    marginBottom: 10,
-  },
-  lable: {
-    fontSize: 16,
-    marginHorizontal: 40,
-    color: '#000000',
-  },
-});
 
 export default Login;
